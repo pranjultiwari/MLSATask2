@@ -14,9 +14,21 @@
     height: 3rem;
     width: 3rem;
     text-align: center;
+    cursor: pointer;
   }
   table {
-    margin: 5rem auto;
+    margin: 2rem auto;
+  }
+  #scoreboard {
+    margin-top: 1rem;
+    font-size: 20px;
+    font-weight: bold;
+  }
+  button {
+    margin-top: 1rem;
+    padding: 0.5rem 1rem;
+    font-size: 18px;
+    cursor: pointer;
   }
   @media (prefers-color-scheme: dark) {
     body,
@@ -28,6 +40,7 @@
 </style>
 
 <h1>Tic Tac Toe</h1>
+<div id="scoreboard">🧑‍💻 0 - 0 🤖</div>
 
 <table>
   <tr>
@@ -47,10 +60,14 @@
   </tr>
 </table>
 
-<h2 hidden>Game over!</h2>
+<h2 hidden id="gameStatus">Game over!</h2>
+<button hidden id="restartBtn">Play Again</button>
 
 <script>
   // Initialization
+  let humanScore = 0;
+  let robotScore = 0;
+
   const boxes = Array.from(document.querySelectorAll("td"));
   const inputs = Array.from(document.querySelectorAll("[type=checkbox]"));
   const rows = [1, 2, 3].map((n) =>
@@ -75,7 +92,11 @@
       document.querySelector(`tr:nth-child(${x}) td:nth-child(${y})`)
     )
   );
-  const gameOver = document.querySelector("h2");
+
+  const gameStatus = document.querySelector("#gameStatus");
+  const restartBtn = document.querySelector("#restartBtn");
+  const scoreboard = document.querySelector("#scoreboard");
+
   const HUMAN = "🧑‍💻";
   const ROBOT = "🤖";
 
@@ -89,15 +110,22 @@
     input.addEventListener("click", handleClickInput);
   }
 
-  // The user chose a box, check for win, robot turn, check for win
   function handleClickInput(evt) {
     evt.target.closest("td").innerHTML = HUMAN;
     if (hasWin()) {
-      return endGame();
+      humanScore++;
+      return endGame(`${HUMAN} wins!`);
+    }
+    if (isDraw()) {
+      return endGame("It's a Draw!");
     }
     runRobotTurn();
     if (hasWin()) {
-      return endGame();
+      robotScore++;
+      return endGame(`${ROBOT} wins!`);
+    }
+    if (isDraw()) {
+      return endGame("It's a Draw!");
     }
   }
 
@@ -122,23 +150,58 @@
     );
   }
 
-  // Determine if every cell matches
   function hasAllSame(arr) {
     return arr.every(
       (td) => !td.querySelector("input") && td.innerHTML === arr[0].innerHTML
     );
   }
 
-  // Display game over, cancel events
-  function endGame() {
-    gameOver.hidden = false;
+  // Check for draw
+  function isDraw() {
+    return boxes.every((td) => !td.querySelector("input")) && !hasWin();
+  }
+
+  // End game
+  function endGame(message) {
+    gameStatus.hidden = false;
+    gameStatus.textContent = message;
+    restartBtn.hidden = false;
+    updateScore();
+
     for (const input of inputs) {
       input.removeEventListener("click", handleClickInput);
       input.remove();
     }
   }
 
-  // Shuffle a copy of the input array
+  // Restart game
+  restartBtn.addEventListener("click", () => {
+    boxes.forEach((td) => {
+      td.innerHTML = '<input type="checkbox" />';
+    });
+    gameStatus.hidden = true;
+    restartBtn.hidden = true;
+    resetInputs();
+
+    if (Math.random() > 0.5) {
+      runRobotTurn();
+    }
+  });
+
+  // Reattach input listeners
+  function resetInputs() {
+    const inputs = Array.from(document.querySelectorAll("[type=checkbox]"));
+    for (const input of inputs) {
+      input.addEventListener("click", handleClickInput);
+    }
+  }
+
+  // Update scoreboard
+  function updateScore() {
+    scoreboard.textContent = `${HUMAN} ${humanScore} - ${robotScore} ${ROBOT}`;
+  }
+
+  // Shuffle
   function shuffle(array) {
     array = array.slice(0);
     for (let i = array.length - 1; i > 0; i--) {
